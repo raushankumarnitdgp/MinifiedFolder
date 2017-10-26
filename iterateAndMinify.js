@@ -1,7 +1,9 @@
 var fs = require('fs');
 var UglifyJS = require("uglify-js");
+var babel = require("babel-core");
+var es2015 = require('babel-preset-es2015');
 
-var walkPath = '/home/raushankumar/Minify/testUglify';
+var walkPath = '/home/raushankumar/Minify/xt-edge/develop';
 
 var walk = function (dir, done) {
     fs.readdir(dir, function (error, list) {
@@ -30,10 +32,52 @@ var walk = function (dir, done) {
                     // do stuff to file here
                     // console.log(file);
                     var data = fs.readFileSync(file, 'utf8');
-                    var result = UglifyJS.minify(data);
-                    if (!result.error) {
-                        console.log('minified');
-                        fs.writeFileSync(file, result.code);
+                    // var options = {
+                    //     mangle: false,
+                    //     mangleProperties: {
+                    //         screw_ie8: false,
+                    //         ignore_quoted: true
+                    //     },
+                    //     compress: {
+                    //         screw_ie8: false,
+                    //         properties: false
+                    //     },
+                    //     output: {
+                    //         screw_ie8: false
+                    //     }
+                    // };
+                    if (file.endsWith('.js')) {
+                        // console.log(file);
+                        var result1 = UglifyJS.minify(data /*,options*/ );
+                        if (!result1.error) {
+                            console.log('minified1: ', file);
+                            fs.writeFileSync(file, result1.code);
+                        } else {
+                            var transpiledCode = babel.transformFile(file, {
+                                presets: [es2015]
+                            } /*,options*/ , function (err, result) {
+                                if (!err) {
+                                    //console.log(result.code);
+                                    console.log('transpiledCode: ', file);
+                                    var result2 = UglifyJS.minify(result.code /*,options*/ );
+                                    if (!result2.error) {
+                                        console.log('minified2: ', file);
+                                        fs.writeFileSync(file, result2.code);
+                                    } else {
+                                        console.log('ERROR:', result2.error);
+                                    }
+                                }
+                            });
+                            // babel.transformFile(file, function (err, transpiledCode) {
+                            //     if(!err) {
+                            //         var result2 = UglifyJS.minify(transpiledCode.code /*,options*/ );
+                            //         if(!result2.error) {
+                            //             console.log('minified2: ', file);
+                            //             fs.writeFileSync(file, result2.code);
+                            //         }
+                            //     } 
+                            //   });
+                        }
                     }
                     next();
                 }
